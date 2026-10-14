@@ -207,3 +207,9 @@ Subsequent sections demonstrate how this telemetry was used to generate alerts a
 The Windows log monitoring implementation successfully provided visibility into endpoint authentication activity through the Elastic SIEM.
 
 This established the foundation for the next stage of the project: **Detection Engineering**, where Windows authentication telemetry was used to create, test and validate a custom security detection rule.
+
+## Supporting Evidence
+
+- [Windows Security Event ID 4625 — Kibana Discover](../02-siem-log-monitoring/screenshots/02-windows-security-log-ingestion.png)
+
+This screenshot demonstrates successful collection and filtering of Windows failed-logon events using Kibana Discover.
