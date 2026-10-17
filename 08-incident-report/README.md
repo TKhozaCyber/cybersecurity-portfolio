@@ -313,21 +313,42 @@ The historical Windows authentication records and Elastic Security investigation
 
 ### 4.3 Remediation Verification
 
-The investigation distinguished between completed remediation actions and independently verified outcomes.
+On 15 October 2026, additional PowerShell checks were performed on WindowsEndpoint to verify that temporary testing configurations had been removed.
 
-The removal of the temporary account and firewall exception was completed during laboratory cleanup.
+**Verification 1 — Temporary Account Removal**
 
-However, additional post-remediation verification was not captured.
+The following command was executed:
 
-Recommended checks include:
+`Get-LocalUser -Name HydraLabUser`
 
-- Confirming that `HydraLabUser` no longer exists.
-- Verifying that the temporary SMB firewall rule has been removed.
-- Repeating the Nmap scan to confirm the endpoint's network exposure.
-- Reviewing Windows authentication and account lockout policies.
-- Confirming that Elastic Security monitoring remains operational.
+Windows reported that the account was not found, confirming that the temporary `HydraLabUser` account was no longer present.
 
-These checks would strengthen assurance that the intended security configuration was restored.
+[View Account Removal Evidence](../07-risk-assessment-remediation/screenshots/01-hydra-account-removal-verified.png)
+
+**Verification 2 — Firewall Exception Removal**
+
+The following command was executed:
+
+`Get-NetFirewallRule -DisplayName "SOC Lab - Allow SMB from Kali"`
+
+Windows reported that no matching firewall rule was found, confirming removal of the specifically named SMB exception used during testing.
+
+[View Firewall Rule Removal Evidence](../07-risk-assessment-remediation/screenshots/02-smb-firewall-rule-removal-verified.png)
+
+**Verification Summary**
+
+| Security Check | Result | Status |
+|---|---|---|
+| Temporary Hydra account | Account not found | Verified |
+| Temporary SMB firewall exception | Named rule not found | Verified |
+| Post-remediation TCP 445 accessibility | Follow-up network scan not performed | Outstanding |
+| Windows account lockout policy | Not independently assessed | Outstanding |
+
+The verification confirmed removal of the temporary account and named firewall exception.
+
+However, a follow-up Nmap scan would still be required to independently establish whether TCP port 445 had returned to its original filtered state.
+
+These results provide supporting evidence of the completed cleanup while identifying the remaining verification activities.
 
 ### 4.4 Recommended Security Improvements
 
@@ -365,7 +386,9 @@ The investigated alerts were closed after the activity was confirmed as authoris
 
 **Response Status:** Investigation completed, alerts closed and temporary testing access removed.
 
-**Outstanding Verification:** Independent post-remediation account and firewall checks were not captured.
+**Remediation Verification:** PowerShell checks performed on 15 October 2026 confirmed that the temporary `HydraLabUser` account and the named SMB firewall exception were absent.
+
+**Outstanding Verification:** A post-remediation network scan has not been performed to confirm that TCP port 445 is filtered. Windows account lockout and password policies have not been independently assessed.
 
 The laboratory investigation was therefore concluded, while the identified security improvements remain recommendations for future implementation and validation.
 
@@ -429,7 +452,7 @@ The investigation identified several improvements that could strengthen the SOC 
 1. Develop detection logic correlating repeated authentication failures with subsequent successful logons.
 2. Review Windows account lockout policies and strengthen authentication controls where appropriate.
 3. Include source IP addresses and account context in detection tuning.
-4. Perform and document post-remediation firewall and account verification.
+4. Complete a post-remediation Nmap scan to assess TCP port 445 accessibility and retain the PowerShell evidence confirming removal of the temporary account and named firewall rule.
 5. Establish a repeatable SOC investigation checklist for future security events.
 
 These recommendations represent opportunities for further development and were not all implemented during this project.
@@ -446,7 +469,8 @@ These recommendations represent opportunities for further development and were n
 | Investigation Status | Completed |
 | Alert Status | Closed |
 | Temporary Testing Access | Removed |
-| Outstanding Actions | Additional remediation verification and detection improvements |
+| Remediation Verification | Temporary Hydra account and named SMB firewall exception confirmed absent on 15 October 2026 |
+| Outstanding Actions | Post-remediation TCP 445 scan, Windows account lockout policy review and improved authentication correlation |
 
 ### 5.5 Overall Project Outcome
 
