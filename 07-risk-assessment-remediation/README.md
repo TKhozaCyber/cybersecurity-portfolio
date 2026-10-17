@@ -178,7 +178,7 @@ Hydra output and Windows Security logs confirmed three failed authentications fo
 
 The Elastic SIEM successfully recorded the authentication sequence.
 
-The laboratory cleanup was completed, but the Windows account lockout policy was not independently assessed, and no post-remediation account or firewall verification screenshot was retained.
+The Windows account lockout policy was not independently assessed. However, subsequent PowerShell checks on 15 October 2026 confirmed that the temporary HydraLabUser account and the named SMB firewall exception were absent. A post-remediation network scan has not yet been performed.
 
 These remain opportunities for further security validation.
 
@@ -229,24 +229,24 @@ The project distinguished between actions completed during testing and evidence 
 |---|---|---|
 | Initial inbound firewall restrictions | Nmap scan showing 1,000 filtered TCP ports | Verified before testing |
 | Restricted SMB access | Follow-up Nmap scan showing only TCP 445 open | Verified during testing |
-| Temporary firewall exception removal | Cleanup action completed | Post-removal scan not captured |
-| Temporary account deletion | Cleanup action completed | Post-deletion account check not captured |
+| Temporary firewall exception removal | PowerShell confirmed the named firewall rule was absent on 15 October 2026 | **Verified — network port state not retested** |
+| Temporary account deletion | PowerShell confirmed `HydraLabUser` was not found on 15 October 2026 | **Verified** |
 | Security log collection | Windows authentication events visible in Kibana Discover | Verified |
 | Failed-logon detection | Elastic alert with threshold count of 3 | Verified |
 | Failed-to-success event correlation | Three Event ID 4625 records followed by Event ID 4624 | Verified through investigation |
 
 ### Recommended Additional Verification
 
-To further strengthen remediation assurance, the following checks would be appropriate:
+The temporary `HydraLabUser` account and the named SMB firewall exception were independently verified as absent on 15 October 2026.
 
-- Confirm that the temporary SMB firewall rule no longer exists.
-- Repeat the Nmap scan to verify that TCP 445 is no longer accessible from Kali under the original conditions.
-- Confirm that the temporary `HydraLabUser` account no longer exists.
+The following additional checks remain recommended:
+
+- Repeat the Nmap scan from Kali to verify whether TCP 445 has returned to its original filtered state.
 - Review Windows account lockout and password policies.
-- Validate that authentication monitoring remains operational following changes.
-- Test enhanced detection logic that correlates repeated failures with successful authentication.
+- Validate that authentication monitoring remains operational following the configuration changes.
+- Test enhanced detection logic that correlates repeated failed logons with subsequent successful authentication.
 
-These checks are recommendations for further validation and are not presented as completed tests.
+These checks remain outstanding and are not presented as completed tests.
 
 ### Supporting Evidence
 
@@ -256,6 +256,8 @@ The following screenshots provide evidence of the observed security controls and
 - [Follow-up Nmap scan — SMB port 445 open](../05-attack-simulation/screenshots/02-nmap-smb-port-445-open.png)
 - [Hydra password-guessing simulation](../05-attack-simulation/screenshots/06-hydra-password-guessing.png)
 - [Windows authentication event sequence](../05-attack-simulation/screenshots/07-hydra-authentication-event-sequence.png)
+- [Verified removal of HydraLabUser account](screenshots/01-hydra-account-removal-verified.png)
+- [Verified removal of temporary SMB firewall rule](screenshots/02-smb-firewall-rule-removal-verified.png)
 
 ### Remediation Outcome
 
@@ -354,8 +356,8 @@ The assessment identified two primary security risks demonstrated through contro
 
 | Security Risk | Likelihood | Impact | Risk Rating | Remediation Status |
 |---|---|---|---|---|
-| SMB network service exposure | Medium | Medium | **Medium (4/9)** | Temporary firewall exception removed; post-removal verification outstanding |
-| Password guessing leading to successful authentication | Medium | High | **High (6/9)** | Temporary test account removed; authentication policy review outstanding |
+| SMB network service exposure | Medium | Medium | **Medium (4/9)** | Named firewall exception removal verified; post-remediation port scan outstanding |
+| Password guessing leading to successful authentication | Medium | High | **High (6/9)** | Temporary test account removal verified; authentication policy review outstanding |
 
 These ratings represent potential risks under the assessed conditions rather than confirmed vulnerabilities in a production environment.
 
@@ -386,10 +388,10 @@ These ratings represent potential risks under the assessed conditions rather tha
 
 **Priority 4 — Strengthen Remediation Verification**
 
-- Confirm temporary accounts have been removed.
-- Verify the absence of temporary firewall exceptions.
-- Perform post-remediation network scans.
-- Retain verification evidence alongside risk assessment documentation.
+- Retain the completed PowerShell verification evidence confirming removal of the temporary account and named firewall rule.
+- Perform a post-remediation Nmap scan to verify whether TCP port 445 has returned to its original filtered state.
+- Review Windows account lockout and password policies.
+- Document any additional verification results and outstanding security risks.
 
 ### Residual Risk Considerations
 
@@ -422,3 +424,57 @@ Mapping these findings to ISO/IEC 27001:2022 Annex A controls demonstrated how p
 The assessment also recognised the importance of distinguishing verified observations from potential vulnerabilities and outstanding remediation checks.
 
 This completed the risk analysis supporting the final SOC incident report.
+
+## Post-Remediation Verification — 15 October 2026
+
+### Verification Objective
+
+Following completion of the controlled authentication simulations, additional checks were performed on WindowsEndpoint to independently verify the removal of temporary testing configurations.
+
+### Verification 1 — Temporary Account Removal
+
+The following PowerShell command was executed:
+
+```powershell
+Get-LocalUser -Name HydraLabUser
+```
+
+**Observed Result:** Windows returned `User HydraLabUser was not found`.
+
+This confirmed that the temporary `HydraLabUser` account was no longer present on WindowsEndpoint.
+
+**Verification Status:** Passed.
+
+[View Account Removal Evidence](screenshots/01-hydra-account-removal-verified.png)
+
+### Verification 2 — Firewall Exception Removal
+
+The following PowerShell command was executed:
+
+```powershell
+Get-NetFirewallRule -DisplayName "SOC Lab - Allow SMB from Kali"
+```
+
+**Observed Result:** Windows reported that no matching firewall rule could be found.
+
+This confirmed that the specifically named firewall exception created for the Kali SMB testing was no longer present.
+
+**Verification Status:** Passed.
+
+[View Firewall Rule Removal Evidence](screenshots/02-smb-firewall-rule-removal-verified.png)
+
+### Verification Summary
+
+| Security Control | Verification Result | Status |
+|---|---|---|
+| Temporary Hydra test account | Account not found | Verified |
+| Temporary SMB firewall exception | Named rule not found | Verified |
+| Post-remediation TCP 445 accessibility | No follow-up network scan performed | Not independently verified |
+
+### Conclusion
+
+The post-remediation checks confirmed that the temporary test account and the specifically named SMB firewall exception were absent from WindowsEndpoint.
+
+These findings provide additional evidence that the temporary testing configuration was removed.
+
+A follow-up network scan would still be required to independently confirm whether TCP port 445 has returned to its original filtered state.
